@@ -1,0 +1,187 @@
+1. find all Samsung phones
+
+SELECT * 
+FROM smartphones
+WHERE brand_name='samsung'
+
+2. find all phones with price > 500000
+
+SELECT * 
+FROM smartphones
+WHERE price>50000
+
+BETWEEN 
+
+1.find all phones in the price range of 10000 and 20000
+
+SELECT * 
+FROM smartphones
+WHERE price BETWEEN 10000 and 20000
+
+2.find phones with rating > 80 and price < 25000
+
+SELECT * 
+FROM smartphones
+WHERE rating>80 and price<25000
+
+3.find all Samsung phones with ram > 8 gb
+
+SELECT * 
+FROM smartphones
+WHERE brand_name='samsung' and ram_capacity>8
+
+4.find all Samsung phones with snapdragon processor
+
+SELECT * 
+FROM smartphones
+WHERE brand_name='samsung' and processor_brand='snapdragon'
+
+Query Execution order
+
+FROM JOIN WHERE GROUPBY HAVING SELECT DISTINCT ORDERBY LIMIT
+
+1. find brands who sell phones with price > 50000
+
+SELECT DISTINCT(brand_name)
+FROM smartphones
+WHERE price>50000
+
+IN and NOT IN
+
+SELECT *
+FROM smartphones
+WHERE processor_brand IN ('snapdragon','exynos')
+
+Update
+Delete
+1.delete all phones price > 200000
+
+DELETE FROM smartphones
+WHERE price>200000
+
+Types of functions in SQL
+Aggregate functions
+Min/Max 
+
+1. find the minimum and maximum price
+
+SELECT MIN(price)
+FROM smartphones
+
+SELECT MAX(price)
+FROM smartphones
+
+2. find the price of the costliest Samsung phone
+
+SELECT MAX(price)
+FROM smartphones
+WHERE brand_name='samsung';
+
+SELECT *
+FROM smartphones
+WHERE brand_name='samsung' and price=110999;
+
+AVG
+1. find avg rating of apple phones
+
+SELECT AVG(rating)
+FROM smartphones
+WHERE brand_name='apple'
+
+SUM
+COUNT
+1. find the number of oneplus phones
+
+SELECT COUNT(*)
+FROM smartphones
+WHERE brand_name='oneplus'
+
+
+COUNT(DISTINCT)
+1. find the number of brands available
+
+SELECT COUNT(DISTINCT brand_name)
+FROM smartphones
+
+STD
+1. find std of screen sizes
+
+SELECT std(screen_size)
+FROM smartphones
+
+
+VAR
+1. find variance of Xiomi phone price
+
+SELECT sqrt(std(price))
+FROM smartphones
+WHERE brand_name='xiaomi'
+
+Scalar functions
+ABS
+Round 
+1. Round the screen_size to 1 decimal place.
+
+SELECT ROUND(screen_size,1)
+FROM smartphones
+
+
+CEIL/Floor
+ceil-4.2 - 5
+ceil-4.8 - 5
+floor-4.2 - 4
+floor-4.8 - 4
+
+floor/Ciel the rating
+
+Practice
+1. find the average battery capacity and the average primary rear camera resolution for all smartphones with a price greater than or equal to 100000.
+
+SELECT ROUND(AVG(battery_capacity),2) AS avg_battery_capacity,ROUND(AVG(primary_camera_rear),2) AS avg_primary_camera_rear
+FROM smartphones
+WHERE price>=100000
+
+
+2. Find the average internal memory capacity of smartphone that have a refresh rate of 120Hz or higher and a front facing camera resolution greater than or equal to 20 megapixels.
+
+SELECT ROUND(AVG(internal_memory),2) as avg_internal_memory
+FROM smartphones
+WHERE primary_camera_front >=20 and refresh_rate>=120
+
+3.Find the number of smartphones with 5g capabilities.
+
+SELECT COUNT(*)
+FROM smartphones
+WHERE has_5g = 'TRUE'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
