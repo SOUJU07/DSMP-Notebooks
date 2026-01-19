@@ -1,0 +1,110 @@
+-- Problem 1:
+-- The question is:
+-- Find out the average sleep duration of top 15 male candidates who's sleep duration are equal to 7.5 or greater than 7.5.
+
+SELECT AVG(`sleep duration`)
+FROM sleepefficiency
+WHERE `Sleep Duration` >= 7.5 and Gender = 'Male'
+ORDER BY `Sleep duration` DESC
+LIMIT 15;
+
+-- Problem 2: Show avg deep sleep time for both gender. Round result at 2 decimal places.
+-- Note: sleep time and deep sleep percentage will give you, deep sleep time.
+
+SELECT gender,ROUND(AVG(`sleep duration` * `deep sleep percentage`/100),2) AS deep_slp_time
+FROM sleepefficiency
+GROUP BY gender;
+
+
+-- Problem 3:
+-- The question is:
+-- Find out the lowest 10th to 30th light sleep percentage records where deep sleep percentage values are between 25 to 45
+-- Display age, light sleep percentage and deep sleep percentage columns only.
+
+SELECT age, `light sleep percentage`, `deep sleep percentage`
+FROM sleepefficiency
+WHERE `deep sleep percentage` between 25 and 45
+ORDER BY `light sleep percentage` ASC
+LIMIT 10,20;
+
+
+-- Problem 4: Group by on exercise frequency and smoking status and show average deep sleep time, 
+-- average light sleep time and avg rem sleep time.
+-- Note the differences in deep sleep time for smoking and non smoking status
+
+SELECT `smoking status`, `exercise frequency`, ROUND(AVG(`sleep duration` * `deep sleep percentage`/100),2) AS deep_slp_time,
+ROUND(AVG(`sleep duration` * `light sleep percentage`/100),2) AS light_slp_time,
+ROUND(AVG(`sleep duration` * `REM sleep percentage`/100),2) AS rem_slp_time
+FROM sleepefficiency
+GROUP BY `smoking status`, `exercise frequency`
+ORDER BY `smoking status`;
+
+-- Problem 5: Group By on Awekning and show AVG Caffeine consumption, AVG Deep sleep time and AVG Alcohol consumption 
+-- only for people who do exercise atleast 3 days a week. Show result in descending order awekenings
+
+SELECT awakenings,avg(`caffeine consumption`),avg(`alcohol consumption`),
+ROUND(AVG(`sleep duration` * `deep sleep percentage`/100),2) AS deep_slp_time
+FROM sleepefficiency
+WHERE `exercise frequency`>=3
+GROUP BY awakenings
+ORDER BY awakenings DESC;
+
+
+-- Problem 6:
+-- The question is:
+-- Display those power stations which have average 'Monitored Cap.(MW)' (display the values) between 1000 and 2000 
+-- and the number of occurance of the power stations
+-- (also display these values) are greater than 200. Also sort the result in ascending order.
+
+SELECT `power station`, COUNT(*) as total_station, AVG(`monitored cap.(MW)`) as avg_cap
+FROM powergeneration
+GROUP BY `power station`
+HAVING total_station >200 and (avg_cap between 1000 and 2000)
+ORDER BY avg_cap ASC;
+
+
+
+-- Problem 7:
+-- The question is:
+-- Display top 10 lowest "value" State names of which the Year either belong to 2013 or 2017 or 2021 and type is 'Public In-State'. 
+-- Also the number of occurance should be between 6 to 10. 
+-- Display the average value upto 2 decimal places, state names and the occurance of the states.
+
+SELECT State, COUNT(*) as occ,Round(avg(value),2) as val
+FROM averagecostundergrad
+WHERE year IN (2013,2017,2021) and type = 'Public In-State'
+GROUP BY State
+HAVING occ between 6 and 10
+ORDER BY val ASC
+LIMIT 10;
+
+
+
+-- Problem -8: Best state in terms of low education cost (Tution Fees) in 'Public' type university.
+SELECT State, avg(value) as val
+FROM averagecostundergrad
+WHERE type LIKE '%Public%' and expense LIKE '%Tuition%'
+GROUP BY State
+ORDER BY val ASC
+LIMIT 1;
+
+
+
+-- Problem 10:
+-- The question is:
+-- Display total and average values of Discount_offered for all the combinations of 'Mode_of_Shipment' 
+-- (display this feature) and 'Warehouse_block' (display this feature also) for all male ('M') and 'High' 
+-- Product_importance. Also sort the values in descending order of Mode_of_Shipment and ascending order of Warehouse_block.
+
+SELECT mode_of_shipment,warehouse_block,gender,product_importance,SUM(discount_offered) as total,Avg(discount_offered) as average
+FROM shipping_ecommerce
+WHERE Gender='M' and product_importance = 'high'
+GROUP BY mode_of_shipment,warehouse_block
+ORDER BY mode_of_shipment DESC,warehouse_block ASC;
+
+
+
+
+
+
+
