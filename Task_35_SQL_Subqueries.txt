@@ -1,0 +1,143 @@
+-- Problem 1
+-- Display the names of athletes who won a gold medal in the 2008 Olympics and 
+-- whose height is greater than the average height of all athletes in the 2008 Olympics.
+SELECT DISTINCT ID,Name
+FROM athletedetails
+WHERE year = 2008 and Medal = 'Gold'
+and height > (SELECT AVG(height) FROM athletedetails 
+				WHERE year = 2008);
+
+
+-- Problem 2
+-- Display the names of athletes who won a medal in the sport of basketball in the 2016 Olympics and whose
+-- weight is less than the average weight of all athletes who won a medal in the 2016 Olympics.
+
+SELECT *
+FROM athletedetails
+WHERE medal IS NOT NULL and sport = 'Basketball' and year = 2016
+and weight < (SELECT AVG(weight) FROM athletedetails 
+				WHERE Medal != 'Null' and year = 2016);
+
+
+-- Problem 3
+-- Display the names of all athletes who have won a medal in the sport of swimming in both the 2008 and 2016 Olympics.
+
+SELECT *
+FROM athletedetails
+WHERE medal IS NOT NULL and sport = 'Swimming'
+and year IN (2008,2016);
+
+
+-- Problem 4
+-- Display the names of all countries that have won more than 50 medals in a single year.
+
+SELECT NOC,Year,COUNT(*) as total_medal
+FROM athletedetails
+WHERE medal IS NOT NULL
+GROUP BY NOC,Year
+HAVING total_medal > 50;
+
+
+-- Problem 5
+-- Display the names of all athletes who have won medals in more than one sport in the same year.
+
+SELECT year,ID, sport,name, COUNT(medal)
+FROM athletedetails
+WHERE medal IS NOT NULL
+GROUP BY year,ID,sport,name
+HAVING COUNT(medal) >= 2;
+
+
+-- Problem 6
+-- What is the average weight difference between male and female athletes in the Olympics who have won a medal in the same event?
+
+SELECT A.Event,
+AVG(A.Weight) AS Male_Avg_Weight,
+AVG(B. Weight) AS Female_Avg_Weight,
+AVG(A.Weight) - AVG(B. Weight) AS Avg_Weight_Difference
+FROM
+(
+SELECT ID, Sex, Name, Event, Weight, Year
+FROM athletedetails
+WHERE Sex = 'M'
+AND Medal IS NOT NULL
+AND Weight IS NOT NULL
+)A
+JOIN
+(
+SELECT ID, Sex, Name, Event, Weight, Year
+FROM athletedetails
+WHERE Sex = 'F' AND Medal IS NOT NULL
+AND Weight IS NOT NULL
+) B
+ON
+A.Event = B.Event
+AND A.Sex != B.Sex
+GROUP BY
+A.Event
+
+
+
+-- Problem 7
+-- How many patients have claimed more than the average claim amount 
+-- for patients who are smokers and have at least one child, and belong to the southeast region?
+SELECT COUNT(*)
+FROM insurance_data
+WHERE claim > (SELECT AVG(claim)
+				FROM insurance_data
+				WHERE region = 'southeast' and smoker = 'Yes' and children >=1);
+-- Problem 8
+-- How many patients have claimed more than the average claim amount
+-- for patients who are not smokers and have a BMI greater than the average BMI for patients who have at least one child?
+
+SELECT COUNT(*)
+FROM insurance_data
+WHERE claim > (SELECT AVG(claim)
+FROM insurance_data
+WHERE smoker ='No' and bmi > (SELECT AVG(bmi) 
+								FROM insurance_data
+								WHERE children>=1));
+
+
+-- Problem 9
+-- How many patients have claimed more than the average claim amount
+-- for patients who have a BMI greater than the average BMI for patients who are diabetic, 
+-- have at least one child, and are from the southwest region?
+
+SELECT COUNT(*)
+FROM insurance_data
+WHERE claim >(SELECT AVG(claim)
+				FROM insurance_data
+				WHERE bmi > (SELECT AVG(bmi) 
+								FROM insurance_data
+								WHERE diabetic = 'Yes' AND children >= 1 AND region = 'southwest'));
+
+-- Problem 10:
+-- What is the difference in the average claim amount between patients
+-- who are smokers and patients who are non-smokers, and have the same BMI and number of children?
+
+SELECT bmi, children, AVG(claim) AS smoker_avg_claim,
+(SELECT AVG(claim)
+FROM insurance_data AS non_smoker
+WHERE non_smoker.bmi = smoker.bmi
+AND non_smoker.children = smoker.children
+AND non_smoker.smoker = 'No'
+) AS non_smoker_avg_claim, AVG(claim) - (
+SELECT AVG(claim)
+FROM insurance_data AS non_smoker
+WHERE non_smoker.bmi = smoker.bmi
+AND non_smoker.children = smoker.children
+AND non_smoker.smoker = 'No'
+) AS claim_diff
+FROM insurance_data AS smoker
+WHERE smoker.smoker = 'Yes'
+GROUP BY smoker.bmi, smoker.children
+having claim_diff is not null
+ORDER BY bmi, children;
+
+
+
+
+
+
+
