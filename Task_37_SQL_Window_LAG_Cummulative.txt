@@ -1,0 +1,210 @@
+-- Q-1: Rank Employee in terms of revenue generation. Show employee id, first name, revenue, and rank
+
+SELECT employeeid,FirstName, ROUND(revenue,2),
+dense_rank() OVER(order by revenue DESC)
+FROM(SELECT UnitPrice,Quantity,t2.EmployeeID,FirstName,
+SUM(unitprice * quantity) OVER(partition by t2.employeeID) as revenue,
+row_number() OVER(partition by t2.employeeID) as rn
+FROM nw_order_details t1
+JOIN nw_orders t2
+ON t1.OrderID=t2.OrderID
+JOIN nw_employees t3
+ON t3.EmployeeID=t2.EmployeeID) as t
+WHERE rn = 1;
+
+-- Q-2: Show All products cumulative sum of units sold each month.
+
+SELECT t1.productid,month(orderdate),SUM(quantity) as total,
+SUM(SUM(quantity)) OVER(partition by productid order by month(orderdate)  
+						ROWS between unbounded preceding and current row) 
+FROM nw_order_details t1
+JOIN nw_orders t2
+ON t1.orderid=t2.orderid
+GROUP BY t1.productid,month(orderdate)
+ORDER BY t1.productid;
+
+
+
+
+-- Q-3: Show Percentage of total revenue by each suppliers
+
+SELECT supplierid, SUM(t1.unitprice * quantity) as revenue,
+SUM(t1.unitprice * quantity)/SUM(SUM(t1.unitprice * quantity)) OVER() *100 as percent 
+FROM nw_order_details t1
+JOIN nw_products t2
+ON t1.productid=t2.productid
+GROUP BY supplierid
+ORDER BY revenue desc;
+
+
+-- Q-4: Show Percentage of total orders by each suppliers
+SELECT supplierid,COUNT(distinct orderid) as total_count,
+COUNT(distinct orderid)/SUM(COUNT(distinct orderid)) OVER() * 100 as percent
+FROM nw_order_details t1
+JOIN nw_products t2
+On t1.productid=t2.productid
+GROUP BY supplierid
+ORDER BY total_count desc;
+
+
+-- Q-5:Show All Products Year Wise report of totalQuantity sold, percentage change from last year.
+SELECT *,(total-lastyear)/lastyear * 100 FROM(
+SELECT productid,year(orderdate),SUM(quantity) as total,
+LAG(SUM(quantity)) over(partition by productid) as lastyear
+FROM nw_order_details t1
+JOIN nw_orders t2
+ON t1.orderid=t2.orderid
+GROUP BY year(orderdate),productid
+) as t;
+
+
+
+
+-- Problem-6: For each condition, what is the average satisfaction level of drugs that are "On Label" vs "Off Label"?
+select `condition`,indication,round(avg(Satisfaction),2)
+FROM drug_clean
+GROUP BY `condition`,indication;
+
+
+-- Problem-7: For each drug type (RX, OTC, RX/OTC), what is the average ease of use and satisfaction level of 
+-- drugs with a price above the median for their type?
+
+WITH temp_df as (
+    SELECT Type,
+        AVG(EaseOfUse) OVER(PARTITION BY Type) AS avg_ease_of_use,
+        AVG(Satisfaction) OVER(PARTITION BY Type) AS avg_satisfaction
+    FROM (
+        SELECT
+            Type, Price,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (
+                ORDER BY Price
+            ) OVER (PARTITION BY Type) AS median_price,
+            EaseOfUse,
+            Satisfaction
+        FROM drug_clear as drugs WHERE Type IN ('RX', 'OTC', 'RX/OTC')
+    ) AS subquery
+    WHERE Price >= median_price
+)
+
+SELECT Type, avg_ease_of_use, avg_satisfaction FROM temp_df GROUP BY Type;
+
+-- Problem 8: What is the cumulative distribution of EaseOfUse ratings for each drug type (RX, OTC, RX/OTC)?
+--  Show the results in descending order by drug type and cumulative distribution. (Use the built-in method and 
+-- the manual method by calculating on your own. For the manual method, use the "ROWS BETWEEN UNBOUNDED PRECEDING 
+-- AND CURRENT ROW" and see if you get the same results as the built-in method.)
+SELECT Type, EaseOfUse,
+       COUNT(*) OVER (
+            PARTITION BY Type
+            ORDER BY EaseOfUse
+        ) * 1.0 / COUNT(*) OVER (PARTITION BY Type) AS cumulative_dist_manual,
+        cume_dist() over(
+            partition by Type
+            order by EaseOfUse
+        ) as 'cumulative_dist_builtin'
+FROM drug_clean as drugs
+WHERE Type IN ('RX', 'OTC', 'RX/OTC')
+ORDER BY Type, cumulative_dist DESC;
+
+-- Problem 9: What is the median satisfaction level for each medical condition? Show the results in descending 
+-- order by median satisfaction level. (Don't repeat the same rows of your result.)
+
+WITH temp_df AS (
+    SELECT drugs.Condition,
+       PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY drugs.Satisfaction) OVER (PARTITION BY drugs.Condition) AS median_satisfaction
+    FROM drug_clean as drugs
+)
+SELECT temp_df.Condition, temp_df.median_satisfaction
+FROM temp_df
+GROUP BY temp_df.Condition
+ORDER BY temp_df.median_satisfaction DESC;
+-- Problem 10: What is the running average of the price of drugs for each medical condition? Show the results in 
+-- ascending order by medical condition and drug name.
+SELECT drugs.Condition, drugs.Drug, ROUND(drugs.Price, 2),
+    ROUND(AVG(drugs.Price) OVER (
+        PARTITION BY drugs.Condition
+        ORDER BY drugs.Drug
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ), 2) AS running_avg_price
+FROM drug_clean as drugs
+ORDER BY drugs.Condition ASC, drugs.Drug ASC;
+
+-- Problem 11: What is the percentage change in the number of reviews for each drug between the previous row and 
+-- the current row? Show the results in descending order by percentage change.
+
+SELECT drugs.Condition, drugs.Drug, drugs.Reviews,
+    (drugs.Reviews - LAG(drugs.Reviews) OVER (
+        PARTITION BY drugs.Condition, drugs.Drug
+        ORDER BY drugs.Reviews DESC)
+    ) * 100.0 / LAG(drugs.Reviews) OVER (
+        PARTITION BY drugs.Condition, drugs.Drug
+        ORDER BY drugs.Reviews DESC
+    ) AS pct_change
+FROM drug_clean as drugs
+ORDER BY pct_change DESC;
+
+-- Problem 12: What is the percentage of total satisfaction level for each drug type (RX, OTC, RX/OTC)? 
+-- Show the results in descending order by drug type and percentage of total satisfaction.
+
+WITH temp_df AS (
+    SELECT Type, Satisfaction,
+        ROUND(SUM(Satisfaction) OVER (PARTITION BY Type) * 100.0 / SUM(Satisfaction) OVER (),2) AS pct_total_satisfaction
+    FROM drug_clean as drugs
+    WHERE Type IN ('RX', 'OTC', 'RX/OTC')
+    ORDER BY Type ASC, pct_total_satisfaction DESC
+)
+SELECT Type, pct_total_satisfaction FROM temp_df
+GROUP BY Type;
+-- Problem 13: What is the cumulative sum of effective ratings for each medical condition and drug form combination? 
+-- Show the results in ascending order by medical condition, drug form and the name of the drug.
+
+SELECT drugs.Condition, drugs.Form, drugs.Drug,
+    drugs.Effective,
+    SUM(drugs.Effective) OVER (
+        PARTITION BY drugs.Condition, drugs.Form
+        ORDER BY drugs.Drug
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS cumulative_sum_effective
+FROM drug_clean as drugs
+ORDER BY
+    drugs.Condition ASC,
+    drugs.Form ASC,
+    drugs.Drug ASC;
+
+-- Problem-14: What is the rank of the average ease of use for each drug type (RX, OTC, RX/OTC)? 
+-- Show the results in descending order by rank and drug type.
+
+SELECT 
+    type,
+    avg_ease,
+    DENSE_RANK() OVER (ORDER BY avg_ease DESC) AS rnk
+FROM (
+    SELECT 
+        type,
+        AVG(easeofuse) AS avg_ease
+    FROM drug_clean
+    GROUP BY type
+) t;
+
+
+
+
+
+-- Problem-15: For each condition, what is the average effectiveness of the top 3 most reviewed drugs?
+SELECT * FROM (
+    SELECT
+        drugs.Condition,
+        drugs.Drug,
+        ROUND(drugs.Reviews, 2) AS 'Reviews',
+        ROUND(AVG(drugs.Effective) OVER (
+            PARTITION BY drugs.Condition, drugs.Drug
+            ORDER BY drugs.Reviews DESC
+            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+        ), 2) AS avg_effectiveness,
+    RANK() OVER (
+        PARTITION BY drugs.Condition
+        ORDER BY drugs.Reviews DESC
+    ) AS rank_num
+    FROM drug_clean as drugs
+) t
+WHERE rank_num <= 3;
+
