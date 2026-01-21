@@ -1,0 +1,108 @@
+-- Problem 1: What are the top 5 patients who claimed the highest insurance amounts?
+
+SELECT *,
+dense_rank() OVER(ORDER BY claim DESC) as 'highest_claim'
+FROM insurance_data
+LIMIT 5;
+
+-- Problem 2: What is the average insurance claimed by patients based on the number of children they have?
+
+SELECT children,avg_claim
+FROM (SELECT *,
+AVG(claim) OVER(partition by children) as avg_claim,
+ROW_NUMBER() over(partition by children) as row_num
+FROM insurance_data) AS t
+WHERE t.row_num = 1;
+
+
+-- Problem 3: What is the highest and lowest claimed amount by patients in each region?
+
+SELECT region, max_value,min_value
+FROM (SELECT *,
+MAX(claim) OVER(partition by region) as max_value,
+MIN(claim) OVER(partition by region) as min_value,
+row_number() over(partition by region) as row_num
+FROM insurance_data) as t
+WHERE t.row_num=1;
+
+
+-- Problem 5: What is the difference between the claimed amount of each patient and the first claimed amount of that patient?
+
+SELECT *,
+claim - first_value(claim) OVER()
+FROM insurance_data;
+
+
+-- Problem 6: For each patient, calculate the difference between their claimed amount and the average claimed amount of 
+-- patients with the same number of children.
+
+SELECT *,
+AVG(claim) OVER(partition by children),
+claim - AVG(claim) OVER(partition by children)
+FROM insurance_data;
+
+-- Problem 7: Show the patient with the highest BMI in each region and their respective overall rank.
+
+SELECT *
+FROM(SELECT *,
+DENSE_RANK() OVER(partition by region Order by bmi DESC) as rnk,
+rank() over(order by bmi desc) as over_rnk
+FROM insurance_data) as t
+WHERE t.rnk = 1;
+
+
+-- Problem 8: Calculate the difference between the claimed amount of each patient and the claimed amount of the 
+-- patient who has the highest BMI in their region.
+
+SELECT *,
+claim - first_value(claim) OVER(partition by region ORDER by bmi desc)
+FROM insurance_data;
+
+
+
+
+
+-- Problem 9: For each patient, calculate the difference in claim amount between the patient and the patient 
+-- with the highest claim amount among patients with and smoker status, within the same region. 
+-- Return the result in descending order difference.
+
+SELECT *,
+MAX(claim) OVER(partition by smoker,region),
+MAX(claim) OVER(partition by smoker,region) - claim as diff
+FROM insurance_data
+ORDER BY diff DESC;
+
+
+-- Problem 10: For each patient, find the maximum BMI value among their next three records (ordered by age).
+
+SELECT *,
+MAX(bmi) OVER(ORDER BY age ROWS BETWEEN current row and 3 following)
+FROM insurance_data;
+
+
+-- Problem 11: For each patient, find the rolling average of the last 2 claims.
+
+SELECT *,
+AVG(claim) OVER(ROWS between 2 preceding and current row)
+FROM insurance_data;
+
+
+-- Problem 12: Find the first claimed insurance value for male and female patients, within each region order the data 
+-- by patient age in ascending order, and only include patients who are non-diabetic and have a bmi value between 25 and 30.
+
+With cte as(
+SELECT *
+FROM insurance_data
+where diabetic='No' and bmi between 25 and 30
+)
+
+SELECT t.gender,t.region,t.first_claim
+FROM (SELECT *,
+first_value(claim) OVER(partition by gender,region Order by age) as first_claim,
+row_number() OVER(partition by gender,region Order by age) as rn
+FROM cte) as t
+WHERE t.rn = 1
+
+
+
+
