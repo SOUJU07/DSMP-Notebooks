@@ -1,0 +1,138 @@
+USE zomato;
+
+-- count no. of row --
+SELECT COUNT(*) from order_details;
+
+-- return n random records --
+select * 
+from order_details
+order by rand()
+limit 5;
+
+-- find null valus --
+select *
+from orders
+where restaurant_rating is null;
+
+
+-- find total number of orders placed by each customer --
+select t1.user_id,t2.name,COUNT(t1.order_id) total_orders
+from orders t1
+join users t2
+on t1.user_id = t2.user_id
+GROUP BY t1.user_id,t2.name;
+
+
+-- find restaurant with most number of menu items --
+select t1.r_id,t2.r_name,COUNT(f_id)
+from menu t1
+join restaurants t2
+on t1.r_id=t2.r_id
+group by t1.r_id,t2.r_name;
+
+-- find number of votes and avg rating for each restaurants --
+select t2.r_name,COUNT(*) as num_votes,ROUND(avg(restaurant_rating),2) as rating
+from orders t1
+join restaurants t2
+on t1.r_id=t2.r_id
+where restaurant_rating IS NOT NULL
+group by t1.r_id,t2.r_name;
+
+
+-- find the food that is being sold at most number of restaurants --
+select f_name,COUNT(*)
+from food t1
+join menu t2
+on t1.f_id = t2.f_id
+group by f_name;
+
+
+-- find restaurant with max revenue in given month --
+select t1.r_id,t2.r_name,monthname(date),SUM(amount)
+from orders t1
+join restaurants t2
+on t1.r_id=t2.r_id
+group by monthname(date),t1.r_id,t2.r_name
+order by t1.r_id;
+
+
+
+
+select t1.r_id,t2.r_name,monthname(date),SUM(amount)
+from orders t1
+join restaurants t2
+on t1.r_id=t2.r_id
+group by monthname(date),t1.r_id,t2.r_name
+having sum(amount)>1500
+order by t1.r_id;
+
+
+-- find users who have never ordered --
+
+select t2.name
+from orders t1
+right join users t2
+on t1.user_id = t2.user_id
+where order_id is null;
+
+-- show order details of a particular customer in a given date range -- 
+select t1.order_id,t1.user_id,t1.date,t3.f_name
+from orders t1
+join order_details t2
+on t1.order_id = t2.order_id
+join food t3
+on t3.f_id = t2.f_id
+where user_id = 5 and date between '2022-05-15' and '2022-07-15';
+
+
+-- customer fav food -- 
+
+select t1.user_id,t2.f_id,t3.f_name,COUNT(t2.f_id) as total_orders
+from orders t1
+join order_details t2
+on t1.order_id = t2.order_id
+join food t3
+on t3.f_id = t2.f_id
+group by t1.user_id,t2.f_id,t3.f_name
+order by total_orders desc;
+
+-- find delivery partner compensations (#deliveries * 100 + 1000*avg_rating) --
+with cte as(
+select partner_id,COUNT(*) as total_deliveries,avg(delivery_rating) as avg_rating
+from orders
+group by partner_id
+)
+select partner_id,(total_deliveries *100 + 1000 * avg_rating) as tips
+from cte;
+
+
+-- find all veg restaurants --
+select t1.r_id
+from menu t1
+join food t2
+on t1.f_id = t2.f_id
+group by t1.r_id
+having min(type) = 'Veg' and max(type)='Veg';
+
+-- find min and max order value for all customers --
+
+Select t1.user_id,name,min(amount),max(amount)
+from orders t1
+join users t2
+on t1.user_id =t2.user_id
+group by user_id,name;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- 
